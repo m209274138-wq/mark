@@ -199,6 +199,55 @@ function trySpawnPowerups(){
    输入
 ===================== */
 const keys = {};
+const touchControls = document.getElementById("touch-controls");
+const jumpButton = document.getElementById("jump-button");
+const fallButton = document.getElementById("fall-button");
+const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+
+if(isTouchDevice){
+    touchControls.classList.add("visible");
+}
+
+function setControlState(code, pressed){
+    keys[code] = pressed;
+
+    if(code === "Space"){
+        player.jumpQueued = pressed;
+    }
+}
+
+function bindTouchButton(button, code){
+    const setPressed = pressed => {
+        button.classList.toggle("active", pressed);
+        setControlState(code, pressed);
+    };
+
+    button.addEventListener("pointerdown", e=>{
+        e.preventDefault();
+        setPressed(true);
+        button.setPointerCapture(e.pointerId);
+    });
+
+    button.addEventListener("pointerup", e=>{
+        e.preventDefault();
+        setPressed(false);
+        button.releasePointerCapture(e.pointerId);
+    });
+
+    button.addEventListener("pointercancel", e=>{
+        e.preventDefault();
+        setPressed(false);
+    });
+
+    button.addEventListener("pointerleave", e=>{
+        if(e.buttons === 0){
+            setPressed(false);
+        }
+    });
+}
+
+bindTouchButton(jumpButton, "Space");
+bindTouchButton(fallButton, "KeyS");
 
 window.addEventListener("keydown", e=>{
     keys[e.code] = true;
@@ -223,18 +272,18 @@ window.addEventListener("keyup", e=>{
 /* =====================
    更新
 ===================== */
-function update(){
+function update(step){
 
     if(Game.gameOver) return;
 
-    Game.distance += Game.speed;
+    Game.distance += Game.speed * step;
 
     camera.x = Game.distance - 200;
     const wasOnGround = player.onGround;
 
     /* 跳跃 */
     if(player.jumpQueued && player.jumpsLeft > 0){
-        player.vy = -18;
+        player.vy = -18 * step;
         player.onGround = false;
         player.jumpsLeft--;
         player.jumpQueued = false;
@@ -242,8 +291,8 @@ function update(){
 
     /* S 键快速落下 */
     if(keys["KeyS"] && !player.onGround){
-        player.vy += 1.2;
-        player.y += 8;
+        player.vy += 1.2 * step;
+        player.y += 8 * step;
     }
 
     if(keys["KeyS"] && player.flightTimer > 0){
@@ -253,13 +302,13 @@ function update(){
 
     /* 飞行状态 */
     if(player.flightTimer > 0){
-        player.flightTimer--;
+        player.flightTimer = Math.max(0, player.flightTimer - step);
         if(player.flightTargetY === null){
             player.flightTargetY = Math.max(80, Math.min(groundY() - player.h - 120, canvas.height * 0.22));
         }
 
         const easing = 0.06;
-        const deltaY = (player.flightTargetY - player.y) * easing;
+        const deltaY = (player.flightTargetY - player.y) * easing * step;
         player.y += deltaY;
         player.vy = deltaY;
 
@@ -269,9 +318,9 @@ function update(){
         }
     } else {
         player.flightTargetY = null;
-        player.vy += 0.9;
+        player.vy += 0.9 * step;
     }
-    player.y += player.vy;
+    player.y += player.vy * step;
 
     if(!wasOnGround && player.y >= groundY() - player.h){
         if(player.flightTimer <= 0 && player.flightLandingInvulnerable){
@@ -298,11 +347,11 @@ function update(){
     }
 
     if(player.invulnerableTimer > 0){
-        player.invulnerableTimer--;
+        player.invulnerableTimer = Math.max(0, player.invulnerableTimer - step);
     }
 
     if(player.shieldTimer > 0){
-        player.shieldTimer--;
+        player.shieldTimer = Math.max(0, player.shieldTimer - step);
     }
 
     /* 速度变化 */
@@ -323,13 +372,13 @@ function update(){
     }
 
     if(Game.shake > 0){
-        Game.shake--;
+        Game.shake = Math.max(0, Game.shake - step);
     }
 
     /* 更新飞行道具 */
     for(let i=powerups.length-1;i>=0;i--){
         let p = powerups[i];
-        p.x -= currentSpeed;
+        p.x -= currentSpeed * step;
 
         const px = p.x - camera.x;
         const py = p.y;
@@ -354,7 +403,7 @@ function update(){
     /* 更新护盾道具 */
     for(let i=shieldPowerups.length-1;i>=0;i--){
         let s = shieldPowerups[i];
-        s.x -= currentSpeed;
+        s.x -= currentSpeed * step;
 
         const sx = s.x - camera.x;
         const sy = s.y;
@@ -376,25 +425,25 @@ function update(){
 
     /* 冲刺逻辑 */
     if(player.dash){
-        player.dashTime--;
+        player.dashTime = Math.max(0, player.dashTime - step);
         if(player.dashTime <= 0){
             player.dash = false;
         }
     }
 
     if(player.dashCooldown > 0){
-        player.dashCooldown--;
+        player.dashCooldown = Math.max(0, player.dashCooldown - step);
     }
 
     /* 生成障碍物 */
-    if(Math.random() < 0.02){
+    if(Math.random() < 0.02 * step){
         spawnObstacle();
     }
 
     /* 更新障碍物 */
     for(let i=obstacles.length-1;i>=0;i--){
         let o = obstacles[i];
-        o.x -= currentSpeed;
+        o.x -= currentSpeed * step;
 
         const screenX = o.x - camera.x;
         const screenY = o.y - o.h;
@@ -669,9 +718,14 @@ function drawUI(){
 /* =====================
    主循环
 ===================== */
-function loop(){
+let lastTime = performance.now();
 
-    update();
+function loop(timestamp = performance.now()){
+    const delta = timestamp - lastTime;
+    const step = delta <= 0 ? 1 : Math.min(2, delta / 16.6667);
+    lastTime = timestamp;
+
+    update(step);
 
     const shakeX = (Math.random() - 0.5) * Game.shake;
     const shakeY = (Math.random() - 0.5) * Game.shake;
@@ -691,4 +745,4 @@ function loop(){
     requestAnimationFrame(loop);
 }
 
-loop();
+requestAnimationFrame(loop);
