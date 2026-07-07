@@ -31,7 +31,7 @@ resize();
 const isMobile = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
 const Game = {
-    speed: isMobile ? 1.4 : 7,
+    speed: isMobile ? 0.28 : 7,
     distance: 0,
     gameOver: false,
     shake: 0
@@ -748,7 +748,10 @@ function drawUI(){
         ctx.fillText("GAME OVER", canvas.width/2 - 180, canvas.height/2);
 
         ctx.font = "25px Arial";
-        ctx.fillText("Press R to Restart", canvas.width/2 - 120, canvas.height/2 + 50);
+        const promptX = player.x + 10 - camera.x;
+        const promptY = player.y - 20;
+        ctx.fillText("Press R", promptX, promptY);
+        ctx.fillText("to Restart", promptX - 8, promptY + 30);
     }
 }
 
