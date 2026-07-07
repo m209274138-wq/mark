@@ -5,8 +5,22 @@ const ctx = canvas.getContext("2d");
    全屏
 ===================== */
 function resize(){
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    if(window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0){
+        canvas.width = Math.max(1, w * window.devicePixelRatio);
+        canvas.height = Math.max(1, h * window.devicePixelRatio);
+        ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+    } else {
+        canvas.width = w;
+        canvas.height = h;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+    }
 }
 window.addEventListener("resize", resize);
 resize();
@@ -14,8 +28,10 @@ resize();
 /* =====================
    游戏状态
 ===================== */
+const isMobile = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+
 const Game = {
-    speed: 7,
+    speed: isMobile ? 1.4 : 7,
     distance: 0,
     gameOver: false,
     shake: 0
