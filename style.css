@@ -18,3 +18,47 @@ canvas{
     width:100vw;
     height:100vh;
 }
+
+.touch-controls{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    display:none;
+    justify-content:space-between;
+    padding:20px 20px max(24px, env(safe-area-inset-bottom));
+    pointer-events:none;
+    z-index:20;
+}
+
+.touch-controls.visible{
+    display:flex;
+}
+
+.touch-btn{
+    pointer-events:auto;
+    border:none;
+    border-radius:999px;
+    padding:16px 24px;
+    font-size:18px;
+    font-weight:bold;
+    color:#fff;
+    background:rgba(255,255,255,0.2);
+    backdrop-filter:blur(8px);
+    box-shadow:0 6px 18px rgba(0,0,0,0.28);
+    user-select:none;
+    touch-action:none;
+}
+
+.touch-btn.active{
+    transform:scale(0.96);
+    background:rgba(255,255,255,0.35);
+}
+
+.jump-btn{
+    background:linear-gradient(135deg, #2bff8a, #13b56d);
+}
+
+.fall-btn{
+    background:linear-gradient(135deg, #4de0ff, #0f6fff);
+}
