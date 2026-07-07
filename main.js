@@ -24,15 +24,27 @@ const Game = {
 const particles = [];
 
 function spawnLandingParticles(x, y){
-    for(let i=0;i<14;i++){
+    for(let i=0;i<24;i++){
         particles.push({
             x,
             y,
-            vx: (Math.random() - 0.5) * 3.2,
-            vy: -Math.random() * 2.2,
-            life: 16 + Math.random() * 8,
-            size: 1.2 + Math.random() * 1.2,
+            vx: (Math.random() - 0.5) * 4.8,
+            vy: -Math.random() * 3.8,
+            life: 24 + Math.random() * 14,
+            size: 1.6 + Math.random() * 2.4,
             color: i % 2 === 0 ? "#7a4a21" : "#b87a3a"
+        });
+    }
+
+    for(let i=0;i<10;i++){
+        particles.push({
+            x,
+            y,
+            vx: (Math.random() - 0.5) * 5.6,
+            vy: -Math.random() * 2.2,
+            life: 10 + Math.random() * 8,
+            size: 2.2 + Math.random() * 2.8,
+            color: i % 2 === 0 ? "#c97b2f" : "#ffcf6b"
         });
     }
 }
@@ -222,28 +234,37 @@ function bindTouchButton(button, code){
         setControlState(code, pressed);
     };
 
-    button.addEventListener("pointerdown", e=>{
+    const handleStart = e=>{
         e.preventDefault();
         setPressed(true);
-        button.setPointerCapture(e.pointerId);
-    });
+        if(typeof button.setPointerCapture === "function" && e.pointerId !== undefined){
+            try{ button.setPointerCapture(e.pointerId); }catch(err){}
+        }
+    };
 
-    button.addEventListener("pointerup", e=>{
+    const handleEnd = e=>{
         e.preventDefault();
         setPressed(false);
-        button.releasePointerCapture(e.pointerId);
-    });
+        if(typeof button.releasePointerCapture === "function" && e.pointerId !== undefined){
+            try{ button.releasePointerCapture(e.pointerId); }catch(err){}
+        }
+    };
 
-    button.addEventListener("pointercancel", e=>{
-        e.preventDefault();
-        setPressed(false);
-    });
-
+    button.addEventListener("pointerdown", handleStart);
+    button.addEventListener("pointerup", handleEnd);
+    button.addEventListener("pointercancel", handleEnd);
     button.addEventListener("pointerleave", e=>{
         if(e.buttons === 0){
             setPressed(false);
         }
     });
+
+    button.addEventListener("touchstart", handleStart, { passive: false });
+    button.addEventListener("touchend", handleEnd, { passive: false });
+    button.addEventListener("touchcancel", handleEnd, { passive: false });
+    button.addEventListener("mousedown", handleStart);
+    button.addEventListener("mouseup", handleEnd);
+    button.addEventListener("mouseleave", ()=>setPressed(false));
 }
 
 bindTouchButton(jumpButton, "Space");
@@ -327,7 +348,7 @@ function update(step){
             const feetX = player.x + player.w / 2;
             const feetY = player.y + player.h;
             spawnLandingParticles(feetX, feetY);
-            Game.shake = 8;
+            Game.shake = 16;
         }
         player.y = groundY() - player.h;
         player.vy = 0;
